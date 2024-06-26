@@ -6,7 +6,7 @@ export interface UserDTO extends Document {
     name: string;
     lastname: string;
     email:string;
-    role: E_ROLE;
+    roles: E_ROLE[];
     salt: string;
     digest: string;
     deliveryInfo: UserDeliveryInfoDTO;
@@ -33,13 +33,17 @@ const userSchema = new Schema<UserDTO>({
         type: SchemaTypes.String,
         required: true,
     },
+    lastname: {
+        type: SchemaTypes.String,
+        required: true,
+    },
     email: {
         type: SchemaTypes.String,
         required: true,
         unique: true
     },
-    role: {
-        type: SchemaTypes.String,
+    roles: {
+        type: SchemaTypes.Mixed,
         required: true,
     },
     salt: {
@@ -72,7 +76,7 @@ userSchema.methods.validatePassword = function(pwd: string): boolean {
 }
 
 userSchema.methods.hasRole = function(role: E_ROLE): boolean {
-    return this.role === role;
+    return this.roles.inclue(role);
 }
 
 export function getSchema(){

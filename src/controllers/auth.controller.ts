@@ -25,6 +25,9 @@ export const handleRegister=(req,res)=>{
     if(!req.body.password){
         return res.status(500).json(new HttpResponse(false,"Password field missing", null));
     }
+    if(!req.body.lastname){
+        return res.status(500).json(new HttpResponse(false,"Lastname field is missing", null));
+    }
     u.setPassword(req.body.password);
     u.save().then((data)=>{
         return res.status(200).json(new HttpResponse(true, "User successfully registered", {id: data._id}));
