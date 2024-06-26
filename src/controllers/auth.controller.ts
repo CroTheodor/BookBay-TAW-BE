@@ -2,7 +2,7 @@ import { TokenDataDTO } from "../models/TokenDataDTO"
 import { UserDTO, getSchema, getModel } from "../models/user.model"
 import * as user from '../models/user.model'
 import jsonwebtoken from 'jsonwebtoken'
-import { HttpResponse } from "../utility/http-response"
+import { HttpResponse } from "../models/http-response.model"
 
 export const handleLogin = (req, res) => {
     const tokenData: TokenDataDTO = {
