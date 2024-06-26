@@ -3,8 +3,10 @@ import { UserDTO, getSchema, getModel } from "../models/user.model"
 import * as user from '../models/user.model'
 import jsonwebtoken from 'jsonwebtoken'
 import { HttpResponse } from "../models/http-response.model"
+import { Logger } from "../utility/logger"
 
 export const handleLogin = (req, res) => {
+
     const tokenData: TokenDataDTO = {
         name: req.user.name,
         lastname: req.user.lastname,
@@ -14,13 +16,8 @@ export const handleLogin = (req, res) => {
     }
 
     let tokenSigned = jsonwebtoken.sign(tokenData,process.env.ACCESS_TOKEN_SECRET, {expiresIn:"1h"});
-    user.getModel().findOne({'email':req.user.email}, (err,user: UserDTO)=>{
-        if(user){
-            user.save();
-        }
-    });
     res.status(200).json({token:tokenSigned});
-
+    Logger.success("Login attemp successful");
 }
 
 export const handleRegister=(req,res)=>{
@@ -34,6 +31,31 @@ export const handleRegister=(req,res)=>{
     }).catch((reason)=>{
         if( reason.code === 11000)
             return res.sendStatus(409)
-        return res.status(500).son(new HttpResponse(false, "DB error", null))
+        return res.status(500).json(new HttpResponse(false, "DB error", null))
     })
+}
+
+export const handleChangePassword = (req,res)=>{
+    const email = req.auth.email;
+    user.getModel().findOne({email:email})
+        .then(
+            (user: UserDTO) =>{
+                user.setPassword(req.body.password);
+                user.passwordChanged = true;
+                user.save()
+                    .then(()=>{
+                        Logger.success("Password successfully changed");
+                        return res.status(200).json(new HttpResponse(true, "Password successfull changed", null));
+                    })
+                    .catch((err)=>{
+                        Logger.error("Failed to save the changes");
+                        return res.status(500).json(new HttpResponse(false, "DB error", null));
+                    })
+            }
+        ).catch(
+            (err)=>{
+                Logger.error("Unable to retrieve user from DB");
+                return res.status(404).json(new HttpResponse(false, "User not found", null));
+            }
+        )
 }

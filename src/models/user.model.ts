@@ -13,6 +13,7 @@ export interface UserDTO extends Document {
     setPassword: (pwd:string) => void,
     validatePassword: (pwd:string)=>boolean;
     hasRole: (role: E_ROLE)=>boolean;
+    passwordChanged: boolean;
 }
 
 export enum E_ROLE{
@@ -48,6 +49,10 @@ const userSchema = new Schema<UserDTO>({
     digest: {
         type: SchemaTypes.String,
         required: true
+    },
+    passwordChanged: {
+        type: SchemaTypes.Boolean,
+        required: false
     }
 })
 

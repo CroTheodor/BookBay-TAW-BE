@@ -19,6 +19,15 @@ export class Logger {
         console.log("============================================================");
     }
 
+    static success(msg: string) {
+        const time = new Date();
+        const formatedMessage = `${moment(time).format("HH:mm")} - ${msg}`
+        console.log("============================================================");
+        console.log(colors.green(formatedMessage));
+        console.log("============================================================");
+    }
+
+
     private Logger() {
 
     }

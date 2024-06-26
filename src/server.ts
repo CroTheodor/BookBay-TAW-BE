@@ -1,6 +1,8 @@
 import express from "express";
 import { Logger } from "./utility/logger";
+import mongoose from "mongoose";
 import cors from "cors";
+import http from "http";
 
 require("dotenv").config();
 
@@ -17,4 +19,13 @@ app.use(cors())
 
 app.use('/auth', require('./routes/auth'));
 
-app.listen(PORT, ()=>Logger.log(`Server running on poort: ${PORT}`));
+mongoose.connect(process.env.db_url as string).then(
+    ()=>{
+        let server = http.createServer(app);
+        app.listen(PORT, ()=> Logger.log(`Server running on port ${PORT}`));
+    }
+).catch(
+        (err)=>{
+            Logger.error(`Error occured during initialization.\n${err}`)
+        }
+)
