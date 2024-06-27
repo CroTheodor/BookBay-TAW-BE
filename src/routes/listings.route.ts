@@ -1,7 +1,7 @@
 import express from "express";
 import { auth } from "../middleware/auth";
 import { isModerator } from "../middleware/isModerator";
-import { listingCreate, listingGetAll, listingGetById, listingUpdateById,  } from "../controllers/listings.controller";
+import { listingCreate, listingGetAll, listingGetById, listingUpdateById, } from "../controllers/listings.controller";
 
 const router = express.Router();
 router.route('')
