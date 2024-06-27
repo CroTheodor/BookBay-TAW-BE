@@ -14,7 +14,7 @@ export const listingCreate = (req, res)=>{
     }
     let newListing = listing.newListing(req.body);
     newListing.setupDates(newListing.auctionDuration);
-    newListing.userId = req.auth.id;
+    newListing.postingUser = req.auth.id;
     newListing.save().then(
         (l: listing.ListingDTO)=>res.status(200).json(new HttpResponse(true, "Listing created: "+l.id, l))
     ).catch(()=>res.status(500).json(new HttpResponse(false, "DB error", null)))

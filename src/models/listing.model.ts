@@ -4,26 +4,27 @@ import moment from "moment";
 
 export interface ListingDTO extends Document{
     id: Schema.Types.ObjectId;
-    userId: Schema.Types.ObjectId;
+    postingUser: Schema.Types.ObjectId;
     book: BookDTO;
     minBid: number;
     auctionDuration: number;
     currentBid?: number;
-    biderId?: Schema.Types.ObjectId;
+    bidingUser?: Schema.Types.ObjectId;
     numberOfBids?: number;
     listingDate: Date;
     endDate: Date;
     listingCompleted?: boolean;
     paymentCompleted?: boolean;
-    placeBid: (amount: number, biderId: string)=>boolean;
+    placeBid: (amount: number, bidingUser: string)=>boolean;
     isAuctionOver: ()=>boolean;
     setupDates: (auctionTime: number)=>void;
 }
 
 const listingSchema = new Schema<ListingDTO>({
-    userId:{
+    postingUser:{
         type: SchemaTypes.ObjectId,
-        required: true
+        required: true,
+        ref: "User"
     },
     book:{
         type: bookSchema,
@@ -46,9 +47,9 @@ const listingSchema = new Schema<ListingDTO>({
             }
         }
     },
-    biderId:{
+    bidingUser:{
         type: SchemaTypes.ObjectId,
-        required:false
+        required:false,
     },
     numberOfBids:{
         type: SchemaTypes.Number,
@@ -73,11 +74,11 @@ const listingSchema = new Schema<ListingDTO>({
 })
 
 // Using this method ensures the integrity of the information regarding a bid
-listingSchema.methods.placeBid = function(amount: number, biderId: string){
+listingSchema.methods.placeBid = function(amount: number, bidingUser: string){
     if(this.currentBid && this.currentBid >= amount)
         return false;
     this.currentBid = amount;
-    this.biderId = biderId;
+    this.bidingUser = bidingUser;
     this.numberOfBids = this.numberOfBids ? this.numberOfBids + 1 : 1;
     return true;
 }
