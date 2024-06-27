@@ -9,7 +9,7 @@ export interface UserDTO extends Document {
     roles: E_ROLE[];
     salt: string;
     digest: string;
-    deliveryInfo: UserDeliveryInfoDTO;
+    shipmentInfo: ShipmentInfoDTO;
     setPassword: (pwd:string) => void,
     validatePassword: (pwd:string)=>boolean;
     hasRole: (role: E_ROLE)=>boolean;
@@ -21,12 +21,31 @@ export enum E_ROLE{
     MODERATOR = "r_moderator"
 }
 
-export interface UserDeliveryInfoDTO{
+export interface ShipmentInfoDTO{
     address: string;
     city: string;
-    post_code: number;
+    post_code: string;
     county: string;
 }
+
+const shipmentInfo = new Schema<ShipmentInfoDTO>({
+    address: {
+        type:SchemaTypes.String,
+        required:true
+    },
+    city: {
+        type:SchemaTypes.String,
+        required:true
+    },
+    post_code: {
+        type: SchemaTypes.String,
+        required: true
+    },
+    county: {
+        type: SchemaTypes.String,
+        required: true
+    }
+})
 
 const userSchema = new Schema<UserDTO>({
     name: {
@@ -45,6 +64,10 @@ const userSchema = new Schema<UserDTO>({
     roles: {
         type: SchemaTypes.Mixed,
         required: true,
+    },
+    shipmentInfo:{
+        type: shipmentInfo,
+        required:false
     },
     salt: {
         type: SchemaTypes.String,

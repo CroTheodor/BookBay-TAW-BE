@@ -71,6 +71,7 @@ export const updateUser = (req: Request, res: Response) => {
                 const name = req.body.name;
                 const lastname = req.body.lastname;
                 const email = req.body.email;
+                const shipmentInfo = req.body.shipmentInfo;
                 
                 if(name){
                     foundUser.name = name;
@@ -82,6 +83,10 @@ export const updateUser = (req: Request, res: Response) => {
 
                 if(email){
                     foundUser.email = email;
+                }
+                
+                if(shipmentInfo){
+                    foundUser.shipmentInfo = shipmentInfo;
                 }
 
                 foundUser.save().then(
