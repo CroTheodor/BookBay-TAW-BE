@@ -1,4 +1,4 @@
-import { Schema, SchemaType, SchemaTypes } from "mongoose";
+import { model, Model, Schema, SchemaTypes } from "mongoose";
 import { BookDTO, bookSchema } from "./book-info.model";
 
 export interface ListingDTO{
@@ -28,7 +28,7 @@ const listingSchema = new Schema<ListingDTO>({
         type: SchemaTypes.Number,
         required:false,
         validate: {
-            validator: function(v){
+            validator: function(v: number){
                 return v > this.minBid;
             }
         }
@@ -42,3 +42,22 @@ const listingSchema = new Schema<ListingDTO>({
         required: true
     }
 })
+
+export function getSchema(){
+    return listingSchema;
+}
+
+let listingModel: Model<ListingDTO>;
+
+export function getModel(): Model<ListingDTO>{
+    if(!listingModel){
+        listingModel = model('Listing', getSchema());
+    }
+    return listingModel;
+}
+
+export function newListing( data: any ): ListingDTO {
+    let _listingModel = getModel();
+    let listing = new _listingModel(data);
+    return listing;
+}

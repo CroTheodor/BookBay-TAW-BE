@@ -1,5 +1,5 @@
-import { TokenDataDTO } from "../models/TokenDataDTO"
-import { UserDTO, getSchema, getModel } from "../models/user.model"
+import { TokenDataDTO } from "../models/token-data.model"
+import { UserDTO } from "../models/user.model"
 import * as user from '../models/user.model'
 import jsonwebtoken from 'jsonwebtoken'
 import { HttpResponse } from "../models/http-response.model"
@@ -50,13 +50,13 @@ export const handleChangePassword = (req,res)=>{
                         Logger.success("Password successfully changed");
                         return res.status(200).json(new HttpResponse(true, "Password successfull changed", null));
                     })
-                    .catch((err)=>{
+                    .catch(()=>{
                         Logger.error("Failed to save the changes");
                         return res.status(500).json(new HttpResponse(false, "DB error", null));
                     })
             }
         ).catch(
-            (err)=>{
+            ()=>{
                 Logger.error("Unable to retrieve user from DB");
                 return res.status(404).json(new HttpResponse(false, "User not found", null));
             }
