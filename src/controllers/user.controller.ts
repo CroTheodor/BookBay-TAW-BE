@@ -2,11 +2,15 @@ import { Request, Response } from "express";
 import * as user from '../models/user.model';
 import { HttpResponse } from "../models/http-response.model";
 
+const UserModel = user.getModel();
+
 export const getUserById = (req: Request,res: Response)=>{
     const id = req.params.id;
-    user.getModel().findOne({_id:id, digest:0, salt:0 })
+    UserModel.findById({_id:id},{ digest:0, salt:0 })
         .then(
             (user: user.UserDTO) =>{
+                if(user === null)
+                    return res.sendStatus(204);
                 return res.status(200).json(new HttpResponse<user.UserDTO>(true, "User found", user));
             }
         )
@@ -18,10 +22,10 @@ export const getUserById = (req: Request,res: Response)=>{
 }
 
 export const getUsers = async (req: Request, res: Response)=>{
-    const User = user.getModel();
     let page = req.query.page;
+
     if(!page){
-        User.find({digest: 0, salt: 0}).then(
+        UserModel.find({},{digest: 0, salt: 0}).then(
             (users: user.UserDTO[])=>{
                 return res.status(200).json(new HttpResponse(true, "User list", {page: 0, content: users }));
             }
@@ -35,14 +39,14 @@ export const getUsers = async (req: Request, res: Response)=>{
         let pageNumber = parseInt(req.query.page as string);
         const limit = parseInt(req.query.limit as string);
         const startIndex = (pageNumber - 1) * limit;
-        const userDocumentsCount = await User.countDocuments().exec();
-        const pageCount = userDocumentsCount / limit;
+        const userDocumentsCount = await UserModel.countDocuments().exec();
+        const pageCount = Math.ceil(userDocumentsCount / limit);
         const result = {
             page: page,
             limit: limit,
             totalPages: pageCount
         }
-        User.find({digest:0, salt:0}).limit(limit).skip(startIndex)
+        UserModel.find({},{digest:0, salt:0}).limit(limit).skip(startIndex)
             .then(
                 (users: user.UserDTO[]) =>{
                     return res.status(200).json(new HttpResponse(true, "User list", {...result, content: users}));
@@ -61,11 +65,11 @@ export const updateUser = (req: Request, res: Response) => {
     if(password)
         return res.status(400).json(new HttpResponse(false, "Unexpected field", null));
     const id = req.params.id;
-    user.getModel().findById(id)
+    UserModel.findById(id)
         .then(
             (foundUser: user.UserDTO)=>{
                 const name = req.body.name;
-                const lastname = req.body.name;
+                const lastname = req.body.lastname;
                 const email = req.body.email;
                 
                 if(name){
@@ -83,18 +87,27 @@ export const updateUser = (req: Request, res: Response) => {
                 foundUser.save().then(
                     ()=>{
                         return res.sendStatus(204);
-                    }
-                )
+                })
                 .catch(
                     ()=>{
                         return res.sendStatus(500);
-                    }
-                )
-            }
-        )
+                })})
         .catch(
             ()=>{
                 return res.sendStatus(404);
-            }
+        })
+}
+
+export const deleteUser = (req: Request, res: Response)=>{
+    const id = req.params.id;
+    if(!id){
+        return res.status(500).json(new HttpResponse(false, "Invalid id", null));
+    }
+    UserModel.deleteOne({_id: id})
+        .then(
+            (result: any)=>res.status(200).json(new HttpResponse(true, "User successfuly deleted", result))
+        )
+        .catch(
+            err=>res.status(500).json(new HttpResponse( false, "Unable to delete user (DB error)", null ))
         )
 }

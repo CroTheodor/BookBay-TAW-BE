@@ -12,7 +12,7 @@ export const handleLogin = (req, res) => {
         lastname: req.user.lastname,
         email: req.user.email,
         id: req.user.id,
-        role: req.user.role
+        roles: req.user.roles
     }
 
     let tokenSigned = jsonwebtoken.sign(tokenData,process.env.ACCESS_TOKEN_SECRET, {expiresIn:"1h"});

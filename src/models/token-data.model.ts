@@ -5,6 +5,6 @@ export interface TokenDataDTO{
     name: string;
     lastname: string;
     email: string;
-    role: E_ROLE;
+    roles: E_ROLE;
     id: Schema.Types.ObjectId;
 }
