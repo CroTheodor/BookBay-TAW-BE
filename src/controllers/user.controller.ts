@@ -4,38 +4,38 @@ import { HttpResponse } from "../models/http-response.model";
 
 const UserModel = user.getModel();
 
-export const getUserById = (req: Request,res: Response)=>{
+export const getUserById = (req: Request, res: Response) => {
     const id = req.params.id;
-    UserModel.findById({_id:id},{ digest:0, salt:0 })
+    UserModel.findById({ _id: id }, { digest: 0, salt: 0 })
         .then(
-            (user: user.UserDTO) =>{
-                if(user === null)
+            (user: user.UserDTO) => {
+                if (user === null)
                     return res.sendStatus(204);
                 return res.status(200).json(new HttpResponse<user.UserDTO>(true, "User found", user));
             }
         )
         .catch(
-            ()=>{
+            () => {
                 return res.status(500).json(new HttpResponse(false, "DB errror", null));
             }
         )
 }
 
-export const getUsers = async (req: Request, res: Response)=>{
+export const getUsers = async (req: Request, res: Response) => {
     let page = req.query.page;
 
-    if(!page){
-        UserModel.find({},{digest: 0, salt: 0}).then(
-            (users: user.UserDTO[])=>{
-                return res.status(200).json(new HttpResponse(true, "User list", {page: 0, content: users }));
+    if (!page) {
+        UserModel.find({}, { digest: 0, salt: 0 }).then(
+            (users: user.UserDTO[]) => {
+                return res.status(200).json(new HttpResponse(true, "User list", { page: 0, content: users }));
             }
         )
-        .catch(
-            ()=>{
-                return res.status(500).json(new HttpResponse(false, "DB error", null));
-            }
-        )
-    }else{
+            .catch(
+                () => {
+                    return res.status(500).json(new HttpResponse(false, "DB error", null));
+                }
+            )
+    } else {
         let pageNumber = parseInt(req.query.page as string);
         const limit = parseInt(req.query.limit as string);
         const startIndex = (pageNumber - 1) * limit;
@@ -46,14 +46,14 @@ export const getUsers = async (req: Request, res: Response)=>{
             limit: limit,
             totalPages: pageCount
         }
-        UserModel.find({},{digest:0, salt:0}).limit(limit).skip(startIndex)
+        UserModel.find({}, { digest: 0, salt: 0 }).limit(limit).skip(startIndex)
             .then(
-                (users: user.UserDTO[]) =>{
-                    return res.status(200).json(new HttpResponse(true, "User list", {...result, content: users}));
+                (users: user.UserDTO[]) => {
+                    return res.status(200).json(new HttpResponse(true, "User list", { ...result, content: users }));
                 }
             )
             .catch(
-                ()=>{
+                () => {
                     return res.status(500).json(new HttpResponse(false, "DB error", null));
                 }
             )
@@ -62,57 +62,58 @@ export const getUsers = async (req: Request, res: Response)=>{
 
 export const updateUser = (req: Request, res: Response) => {
     const password = req.body.password;
-    if(password)
+    if (password)
         return res.status(400).json(new HttpResponse(false, "Unexpected field", null));
     const id = req.params.id;
     UserModel.findById(id)
         .then(
-            (foundUser: user.UserDTO)=>{
+            (foundUser: user.UserDTO) => {
                 const name = req.body.name;
                 const lastname = req.body.lastname;
                 const email = req.body.email;
                 const shipmentInfo = req.body.shipmentInfo;
-                
-                if(name){
+
+                if (name) {
                     foundUser.name = name;
                 }
 
-                if(lastname){
+                if (lastname) {
                     foundUser.lastname = lastname;
                 }
 
-                if(email){
+                if (email) {
                     foundUser.email = email;
                 }
-                
-                if(shipmentInfo){
+
+                if (shipmentInfo) {
                     foundUser.shipmentInfo = shipmentInfo;
                 }
 
                 foundUser.save().then(
-                    ()=>{
+                    () => {
                         return res.sendStatus(204);
-                })
-                .catch(
-                    ()=>{
-                        return res.sendStatus(500);
-                })})
+                    })
+                    .catch(
+                        () => {
+                            return res.sendStatus(500);
+                        })
+            })
         .catch(
-            ()=>{
+            () => {
                 return res.sendStatus(404);
-        })
+            })
 }
 
-export const deleteUser = (req: Request, res: Response)=>{
+export const deleteUser = (req: Request, res: Response) => {
     const id = req.params.id;
-    if(!id){
+    if (!id) {
         return res.status(500).json(new HttpResponse(false, "Invalid id", null));
     }
-    UserModel.deleteOne({_id: id})
+    UserModel.deleteOne({ _id: id })
         .then(
-            (result: any)=>res.status(200).json(new HttpResponse(true, "User successfuly deleted", result))
+            (result: any) => res.status(200).json(new HttpResponse(true, "User successfuly deleted", result))
         )
         .catch(
-            err=>res.status(500).json(new HttpResponse( false, "Unable to delete user (DB error)", null ))
+            err => res.status(500).json(new HttpResponse(false, "Unable to delete user (DB error)", null))
         )
 }

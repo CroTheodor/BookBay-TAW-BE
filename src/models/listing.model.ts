@@ -50,6 +50,7 @@ const listingSchema = new Schema<ListingDTO>({
     bidingUser:{
         type: SchemaTypes.ObjectId,
         required:false,
+        ref: "User"
     },
     numberOfBids:{
         type: SchemaTypes.Number,
