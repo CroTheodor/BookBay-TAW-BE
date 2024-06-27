@@ -5,23 +5,24 @@ export interface UserDTO extends Document {
     readonly id: Schema.Types.ObjectId;
     name: string;
     lastname: string;
-    email:string;
+    email: string;
     roles: E_ROLE[];
     salt: string;
     digest: string;
     shipmentInfo: ShipmentInfoDTO;
-    setPassword: (pwd:string) => void,
-    validatePassword: (pwd:string)=>boolean;
-    hasRole: (role: E_ROLE)=>boolean;
+    setPassword: (pwd: string) => void,
+    validatePassword: (pwd: string) => boolean;
+    hasRole: (role: E_ROLE) => boolean;
     passwordChanged: boolean;
 }
 
-export enum E_ROLE{
+export enum E_ROLE {
+    STUDENT = "r_student",
     USER = "r_user",
     MODERATOR = "r_moderator"
 }
 
-export interface ShipmentInfoDTO{
+export interface ShipmentInfoDTO {
     address: string;
     city: string;
     post_code: string;
@@ -30,12 +31,12 @@ export interface ShipmentInfoDTO{
 
 const shipmentInfo = new Schema<ShipmentInfoDTO>({
     address: {
-        type:SchemaTypes.String,
-        required:true
+        type: SchemaTypes.String,
+        required: true
     },
     city: {
-        type:SchemaTypes.String,
-        required:true
+        type: SchemaTypes.String,
+        required: true
     },
     post_code: {
         type: SchemaTypes.String,
@@ -65,9 +66,9 @@ const userSchema = new Schema<UserDTO>({
         type: SchemaTypes.Mixed,
         required: true,
     },
-    shipmentInfo:{
+    shipmentInfo: {
         type: shipmentInfo,
-        required:false
+        required: false
     },
     salt: {
         type: SchemaTypes.String,
@@ -83,7 +84,7 @@ const userSchema = new Schema<UserDTO>({
     }
 })
 
-userSchema.methods.setPassword = function( pwd: string) {
+userSchema.methods.setPassword = function(pwd: string) {
     this.salt = crypto.randomBytes(16).toString('hex');
     // hmac stands for Hashed Message Authentication Code
     const hmac = crypto.createHmac('sha512', this.salt);
@@ -102,19 +103,19 @@ userSchema.methods.hasRole = function(role: E_ROLE): boolean {
     return this.roles.inclue(role);
 }
 
-export function getSchema(){
+export function getSchema() {
     return userSchema;
 }
 
 let userModel: any;
 export function getModel(): Model<UserDTO> {
-    if(!userModel) {
+    if (!userModel) {
         userModel = model('User', getSchema());
     }
     return userModel;
 }
 
-export function newUser( data: any): UserDTO {
+export function newUser(data: any): UserDTO {
     let _usermodel = getModel();
     let user = new _usermodel(data);
     return user;
