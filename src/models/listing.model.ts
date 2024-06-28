@@ -10,7 +10,7 @@ export interface ListingDTO extends Document{
     auctionDuration: number;
     currentBid?: number;
     bidingUser?: Schema.Types.ObjectId;
-    numberOfBids?: number;
+    bids?: BidDTO[];
     listingDate: Date;
     endDate: Date;
     listingCompleted?: boolean;
@@ -19,6 +19,16 @@ export interface ListingDTO extends Document{
     isAuctionOver: ()=>boolean;
     setupDates: (auctionTime: number)=>void;
 }
+
+export interface BidDTO{
+    amount: number;
+    biderId: string;
+}
+
+const bidSchema = new Schema<BidDTO>({
+    amount:{type: SchemaTypes.Number, required:true},
+    biderId:{type: SchemaTypes.String, required:true}
+})
 
 const listingSchema = new Schema<ListingDTO>({
     postingUser:{
@@ -52,8 +62,8 @@ const listingSchema = new Schema<ListingDTO>({
         required:false,
         ref: "User"
     },
-    numberOfBids:{
-        type: SchemaTypes.Number,
+    bids:{
+        type: [ bidSchema ],
         required: false,
     },
     listingDate:{
@@ -80,7 +90,10 @@ listingSchema.methods.placeBid = function(amount: number, bidingUser: string){
         return false;
     this.currentBid = amount;
     this.bidingUser = bidingUser;
-    this.numberOfBids = this.numberOfBids ? this.numberOfBids + 1 : 1;
+    if(!this.bids){
+        this.bids = [];
+    }
+    this.bids.push({amount:amount, biderId:bidingUser})
     return true;
 }
 

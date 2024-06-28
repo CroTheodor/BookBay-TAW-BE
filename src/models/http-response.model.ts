@@ -9,3 +9,19 @@ export class HttpResponse<T>{
         this.response = response;
     }
 }
+
+export class PaginatedList{
+    page: number;
+    limit: number;
+    totalPages: number;
+    content: any[];
+
+    constructor(page: number, limit: number, numberOfDocs: number, content?: any[]){
+        this.page = page;
+        this.limit = limit;
+        this.totalPages = Math.ceil(numberOfDocs / limit);
+        if(content){
+            this.content = content;
+        }
+    }
+}
