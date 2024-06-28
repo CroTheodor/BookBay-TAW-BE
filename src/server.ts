@@ -9,7 +9,7 @@ require("dotenv").config();
 const PORT = process.env.PORT || 3500;
 const app = express()
 
-app.use((req: { url: any; method: any; },res: any,next: () => void)=>{
+app.use((req: { url: any; method: any; }, res: any, next: () => void) => {
     Logger.log(`New request for: ${req.url}\nMethod: ${req.method}`);
     next();
 })
@@ -22,12 +22,12 @@ app.use('/users', require('./routes/user.route'));
 app.use('/listings', require('./routes/listings.route'));
 
 mongoose.connect(process.env.db_url as string).then(
-    ()=>{
+    () => {
         let server = http.createServer(app);
-        app.listen(PORT, ()=> Logger.log(`Server running on port ${PORT}`));
+        app.listen(PORT, () => Logger.log(`Server running on port ${PORT}`));
     }
 ).catch(
-        (err)=>{
-            Logger.error(`Error occured during initialization.\n${err}`)
-        }
+    (err) => {
+        Logger.error(`Error occured during initialization.\n${err}`)
+    }
 )

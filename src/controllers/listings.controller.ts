@@ -21,28 +21,36 @@ export const listingCreate = (req, res) => {
 }
 
 export const listingGetAll = async (req, res) => {
+    ListingModel.find({}).then(
+        (listingList: listing.ListingDTO[]) => res.status(200).json(new HttpResponse(false, "Retrieved the list of listings", listingList))
+    ).catch(
+        () => res.status(500).json(new HttpResponse(false, "DB error", null))
+    )
+}
+
+export const listingGetActive = async (req, res) => {
 
     const titleFilter = req.query.title;
     const authorFilter = req.query.author;
     const publisherFilter = req.query.publisher;
     const courseFilter = req.query.course;
 
-    let filter = {};
+    let filter: any = { endDate: { $gte: moment().toDate() } };
 
     if (titleFilter) {
-        filter = { ...filter, "title": req.query.title };
+        filter = { ...filter, title: req.query.title };
     }
 
     if (authorFilter) {
-        filter = { ...filter, "author": req.query.author };
+        filter = { ...filter, author: req.query.author };
     }
 
     if (publisherFilter) {
-        filter = { ...filter, "publisher": req.query.publisher }
+        filter = { ...filter, publisher: req.query.publisher }
     }
 
     if (courseFilter) {
-        filter = { ...filter, "course": req.query.course };
+        filter = { ...filter, course: req.query.course };
     }
 
     const page = req.query.page;
@@ -129,6 +137,48 @@ export const listingUpdateById = (req, res) => {
         )
 }
 
-export const listingsBid = (req,res) =>{
-    const id = req.params.id
+export const listingsBid = (req, res) => {
+    const id = req.params.id;
+    const amount = req.body.amount;
+    const biderId = req.auth._id;
+
+    if (!id || !amount) {
+        return res.status(500).json(new HttpResponse(false, "Field \'amount\' missing", null));
+    }
+
+    ListingModel.findById(id)
+        .then(
+            (l: listing.ListingDTO) => {
+                const updated = l.placeBid(amount, biderId);
+                if (!updated) {
+                    return res.status(500).json(new HttpResponse(false, "The biding amount cannot be inferior to the actual bid", null));
+                }
+                l.save().then(
+                    // Here I emit my SSE event
+                    () => res.status(200).json(new HttpResponse(true, "Successfully placed bid", l))
+                ).catch(
+                    () => res.status(500).json(new HttpResponse(false, "DB error", null))
+                )
+            }
+        )
+        .catch(
+            () => {
+                return res.status(404).json(false, "Impossible to retrieve listing from DB", null);
+            }
+        )
+}
+
+export const listingUserListings = (req, res) => {
+    const id = req.params.id;
+    const isActive = req.query.active;
+    let filter: any = { postingUser: id };
+    if (isActive) {
+        filter = { ...filter, endDate: { $gte: moment().toDate() } }
+    }
+    ListingModel.find(filter).populate({path:"bidingUser", select:"-salt -digets"}).populate({path:"postingUser", select:"-salt -digest"})
+        .then(
+            (listingList: listing.ListingDTO[])=>res.status(200).json(new HttpResponse(true,"Retrieved user's listings", listingList))
+        ).catch(
+            ()=>res.status(404).json(new HttpResponse(false, "Not found", null))
+        )
 }
