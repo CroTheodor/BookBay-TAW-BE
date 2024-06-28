@@ -3,6 +3,7 @@ import { checkBodyRequest } from "../utility/helper-functions";
 import { HttpResponse, PaginatedList } from "../models/http-response.model";
 import { Logger } from "../utility/logger";
 import moment from "moment";
+import { ios } from "../server";
 
 const ListingModel = listing.getModel();
 
@@ -61,9 +62,14 @@ export const listingGetActive = async (req, res) => {
     const page = req.query.page;
     const pageNumber = page ? Number.parseInt(page) : 1;
     const limit = page ? req.query.limit : 50000;
-    const numberOfDocuments = await ListingModel.countDocuments(filter).exec();
+    let numberOfDocuments;
+    try {
+        numberOfDocuments = await ListingModel.countDocuments(filter).exec();
+    } catch (error) {
+        Logger.log(error);
+    }
 
-    ListingModel.find(filter, { postingUser: { salt: 0, digest: 0 } })
+    ListingModel.find(filter)
         .limit(limit)
         .skip(pageNumber - 1)
         .sort({ listingDate: -1 })
@@ -71,10 +77,15 @@ export const listingGetActive = async (req, res) => {
         .populate({ path: "bidingUser", select: "-salt -digest" })
         .then(
             (listings: any) => {
-                return res.status(200).json(new HttpResponse(true, "Retrieved the list of listings", new PaginatedList(pageNumber, limit, numberOfDocuments)));
+                return res.status(200).json(
+                    new HttpResponse(true, "Retrieved the list of listings", new PaginatedList(pageNumber, limit, numberOfDocuments, listings))
+                );
             })
         .catch(
-            () => res.status(500).json(new HttpResponse(false, "DB error", null))
+            (err) => {
+                Logger.log(err);
+                res.status(500).json(new HttpResponse(false, "DB error", null))
+            }
         )
 
 }
@@ -140,7 +151,7 @@ export const listingUpdateById = (req, res) => {
 export const listingsBid = (req, res) => {
     const id = req.params.id;
     const amount = req.body.amount;
-    const biderId = req.auth._id;
+    const biderId = req.auth.id;
 
     if (!id || !amount) {
         return res.status(500).json(new HttpResponse(false, "Field \'amount\' missing", null));
@@ -154,8 +165,13 @@ export const listingsBid = (req, res) => {
                     return res.status(500).json(new HttpResponse(false, "The biding amount cannot be inferior to the actual bid", null));
                 }
                 l.save().then(
-                    // Here I emit my SSE event
-                    () => res.status(200).json(new HttpResponse(true, "Successfully placed bid", l))
+                    () =>{
+                        res.status(200).json(new HttpResponse(true, "Successfully placed bid", l))
+                        ios.emit('bid', {
+                            currentBid: l.currentBid,
+                            bids: l.bids
+                        })
+                    } 
                 ).catch(
                     () => res.status(500).json(new HttpResponse(false, "DB error", null))
                 )
@@ -165,28 +181,6 @@ export const listingsBid = (req, res) => {
             () => {
                 return res.status(404).json(false, "Impossible to retrieve listing from DB", null);
             }
-        )
-}
-
-export const listingUserListings = async (req, res) => {
-    const id = req.params.id;
-    const isActive = req.query.active;
-    let filter: any = { postingUser: id };
-    if (isActive) {
-        filter = { ...filter, endDate: { $gte: moment().toDate() } }
-    }
-
-    const page = req.query.page ? parseInt(req.query.page) : 1;
-    const limit = req.query.page ? req.query.limit ? req.query.limit : process.env.DEFAULT_LIMIT : 5000;
-    const docCount = await ListingModel.countDocuments(filter).exec();
-
-    ListingModel.find(filter).skip(page - 1).limit(limit)
-        .populate({ path: "bidingUser", select: "-salt -digets" })
-        .populate({ path: "postingUser", select: "-salt -digest" })
-        .then(
-            (listingList: listing.ListingDTO[]) => res.status(200).json(new HttpResponse(true, "Retrieved user's listings", new PaginatedList(page, limit, docCount, listingList)))
-        ).catch(
-            () => res.status(404).json(new HttpResponse(false, "Not found", null))
         )
 }
 
@@ -206,7 +200,7 @@ export const listingStatisticExpiredNoBids = async (req, res) => {
         .then(
             (listingList: listing.ListingDTO[]) => {
                 res.status(200).json(new HttpResponse(true, "Retrieved user's listings", new PaginatedList(page, limit, docCount, listingList)))
-            } 
+            }
         ).catch(
             () => res.status(404).json(new HttpResponse(false, "Not found", null))
         )

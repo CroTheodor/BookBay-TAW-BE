@@ -3,8 +3,10 @@ import { Logger } from "./utility/logger";
 import mongoose from "mongoose";
 import cors from "cors";
 import http from "http";
+const io = require('socket.io');
 
 require("dotenv").config();
+export let ios = undefined;
 
 const PORT = process.env.PORT || 3500;
 const app = express()
@@ -25,6 +27,7 @@ mongoose.connect(process.env.db_url as string).then(
     () => {
         let server = http.createServer(app);
         app.listen(PORT, () => Logger.log(`Server running on port ${PORT}`));
+        ios = io(server);
     }
 ).catch(
     (err) => {

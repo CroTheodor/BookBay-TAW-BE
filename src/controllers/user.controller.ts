@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
 import * as user from '../models/user.model';
-import { HttpResponse } from "../models/http-response.model";
+import * as listing from '../models/listing.model';
+import { HttpResponse, PaginatedList } from "../models/http-response.model";
+import moment from "moment";
 
 const UserModel = user.getModel();
+const ListingModel = listing.getModel();
 
 export const getUserById = (req: Request, res: Response) => {
     const id = req.params.id;
@@ -117,3 +120,27 @@ export const deleteUser = (req: Request, res: Response) => {
             err => res.status(500).json(new HttpResponse(false, "Unable to delete user (DB error)", null))
         )
 }
+
+export const listingUserListings = async (req, res) => {
+    const id = req.params.id;
+    const isActive = req.query.active;
+    let filter: any = { postingUser: id };
+    if (isActive) {
+        filter = { ...filter, endDate: { $gte: moment().toDate() } }
+    }
+
+    const page = req.query.page ? parseInt(req.query.page) : 1;
+    const limit = req.query.page ? req.query.limit ? req.query.limit : process.env.DEFAULT_LIMIT : 5000;
+    const docCount = await ListingModel.countDocuments(filter).exec();
+
+    ListingModel.find(filter).skip(page - 1).limit(limit)
+        .populate({ path: "bidingUser", select: "-salt -digets" })
+        .populate({ path: "postingUser", select: "-salt -digest" })
+        .then(
+            (listingList: listing.ListingDTO[]) => res.status(200).json(new HttpResponse(true, "Retrieved user's listings", new PaginatedList(page, limit, docCount, listingList)))
+        ).catch(
+            () => res.status(404).json(new HttpResponse(false, "Not found", null))
+        )
+}
+
+

@@ -2,7 +2,7 @@ import { Document, model, Model, Schema, SchemaTypes } from "mongoose";
 import { BookDTO, bookSchema } from "./book-info.model";
 import moment from "moment";
 
-export interface ListingDTO extends Document{
+export interface ListingDTO extends Document {
     id: Schema.Types.ObjectId;
     postingUser: Schema.Types.ObjectId;
     book: BookDTO;
@@ -15,117 +15,117 @@ export interface ListingDTO extends Document{
     endDate: Date;
     listingCompleted?: boolean;
     paymentCompleted?: boolean;
-    placeBid: (amount: number, bidingUser: string)=>boolean;
-    isAuctionOver: ()=>boolean;
-    setupDates: (auctionTime: number)=>void;
+    placeBid: (amount: number, bidingUser: string) => boolean;
+    isAuctionOver: () => boolean;
+    setupDates: (auctionTime: number) => void;
 }
 
-export interface BidDTO{
+export interface BidDTO {
     amount: number;
-    biderId: string;
+    biderId: Schema.Types.ObjectId;
+    date: Date;
 }
 
 const bidSchema = new Schema<BidDTO>({
-    amount:{type: SchemaTypes.Number, required:true},
-    biderId:{type: SchemaTypes.String, required:true}
+    amount: { type: SchemaTypes.Number, required: true },
+    biderId: { type: SchemaTypes.ObjectId, required: true },
+    date: { type: SchemaTypes.Date, required: true }
 })
 
 const listingSchema = new Schema<ListingDTO>({
-    postingUser:{
+    postingUser: {
         type: SchemaTypes.ObjectId,
         required: true,
         ref: "User"
     },
-    book:{
+    book: {
         type: bookSchema,
         required: true
     },
-    minBid:{
+    minBid: {
         type: SchemaTypes.Number,
-        required:true
+        required: true
     },
-    auctionDuration:{
+    auctionDuration: {
         type: SchemaTypes.Number,
-        required:true
+        required: true
     },
-    currentBid:{
+    currentBid: {
         type: SchemaTypes.Number,
-        required:false,
+        required: false,
+    },
+    bidingUser: {
+        type: SchemaTypes.ObjectId,
+        required: false,
+        ref: "User",
         validate: {
-            validator: function(v: number){
-                return v > this.minBid;
+            validator: function(v: Schema.Types.ObjectId) {
+                return this.postingUser !== v;
             }
         }
     },
-    bidingUser:{
-        type: SchemaTypes.ObjectId,
-        required:false,
-        ref: "User"
-    },
-    bids:{
-        type: [ bidSchema ],
+    bids: {
+        type: [bidSchema],
         required: false,
     },
-    listingDate:{
+    listingDate: {
         type: SchemaTypes.Date,
         required: true
     },
-    endDate:{
+    endDate: {
         type: SchemaTypes.Date,
         required: true,
     },
-    listingCompleted:{
+    listingCompleted: {
         type: SchemaTypes.Boolean,
-        required:false
+        required: false
     },
     paymentCompleted: {
         type: SchemaTypes.Boolean,
-        required:false
+        required: false
     }
 })
 
 // Using this method ensures the integrity of the information regarding a bid
-listingSchema.methods.placeBid = function(amount: number, bidingUser: string){
-    if(this.currentBid && this.currentBid >= amount)
+listingSchema.methods.placeBid = function(amount: number, bidingUser: string) {
+    if (this.currentBid && this.currentBid >= amount)
         return false;
     this.currentBid = amount;
     this.bidingUser = bidingUser;
-    if(!this.bids){
+    if (!this.bids) {
         this.bids = [];
     }
-    this.bids.push({amount:amount, biderId:bidingUser})
+    this.bids.push({ amount: amount, biderId: bidingUser, date: moment().toDate() })
     return true;
 }
 
-listingSchema.methods.isAuctionOver = function(){
+listingSchema.methods.isAuctionOver = function() {
     const now = moment();
     const end = moment(this.endDate);
     return now.isBefore(end);
 }
 
-listingSchema.methods.setupDates = function(duration: number){
+listingSchema.methods.setupDates = function(duration: number) {
     const today = moment();
     const endDate = moment(today).add(duration, "hours");
-    console.log(today)
-    console.log(endDate);
     this.listingDate = today;
     this.endDate = endDate
 }
 
-export function getSchema(){
+export function getSchema() {
     return listingSchema;
 }
 
 let listingModel: Model<ListingDTO>;
 
-export function getModel(): Model<ListingDTO>{
-    if(!listingModel){
+export function getModel(): Model<ListingDTO> {
+    if (!listingModel) {
         listingModel = model('Listing', getSchema());
     }
     return listingModel;
 }
 
-export function newListing( data: any ): ListingDTO {
+export function newListing(data: any): ListingDTO {
     let _listingModel = getModel();
     let listing = new _listingModel(data);
     return listing;
