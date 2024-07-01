@@ -26,8 +26,22 @@ app.use('/listings', require('./routes/listings.route'));
 mongoose.connect(process.env.db_url as string).then(
     () => {
         let server = http.createServer(app);
-        app.listen(PORT, () => Logger.log(`Server running on port ${PORT}`));
-        ios = io(server);
+        ios = io(server, {
+            cors: {
+                origin:"http://localhost:4200",
+                methods:["GET", "POST"]
+            }
+        });
+        ios.on("connection", (socket) => {
+            socket.emit("message", "HELLO WORLD");
+        })
+        // io.engine.on("connection_error", (err) => {
+        //     console.log(err.req);      // the request object
+        //     console.log(err.code);     // the error code, for example 1
+        //     console.log(err.message);  // the error message, for example "Session ID unknown"
+        //     console.log(err.context);  // some additional error context
+        // });
+        server.listen(PORT, () => Logger.log(`Server running on port ${PORT}`));
     }
 ).catch(
     (err) => {
