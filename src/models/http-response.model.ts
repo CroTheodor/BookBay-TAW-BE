@@ -13,13 +13,13 @@ export class HttpResponse<T>{
 export class PaginatedList{
     page: number;
     limit: number;
-    totalPages: number;
+    totalItems: number;
     content: any[];
 
     constructor(page: number, limit: number, numberOfDocs: number, content?: any[]){
         this.page = page;
         this.limit = limit;
-        this.totalPages = Math.ceil(numberOfDocs / limit);
+        this.totalItems = numberOfDocs;
         if(content){
             this.content = content;
         }

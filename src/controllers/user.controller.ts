@@ -43,11 +43,10 @@ export const getUsers = async (req: Request, res: Response) => {
         const limit = parseInt(req.query.limit as string);
         const startIndex = (pageNumber - 1) * limit;
         const userDocumentsCount = await UserModel.countDocuments().exec();
-        const pageCount = Math.ceil(userDocumentsCount / limit);
         const result = {
             page: page,
             limit: limit,
-            totalPages: pageCount
+            totalItems:userDocumentsCount 
         }
         UserModel.find({}, { digest: 0, salt: 0 }).limit(limit).skip(startIndex)
             .then(
