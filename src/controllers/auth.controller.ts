@@ -11,7 +11,7 @@ export const handleLogin = (req, res) => {
         name: req.user.name,
         lastname: req.user.lastname,
         email: req.user.email,
-        id: req.user.id,
+        _id: req.user._id,
         roles: req.user.roles
     }
 
