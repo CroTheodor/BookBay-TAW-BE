@@ -1,5 +1,5 @@
 import { Schema } from "mongoose";
-import { E_ROLE } from "./user.model";
+import { E_ROLE, ShipmentInfoDTO } from "./user.model";
 
 export interface TokenDataDTO{
     name: string;
@@ -7,4 +7,5 @@ export interface TokenDataDTO{
     email: string;
     roles: E_ROLE;
     _id: Schema.Types.ObjectId;
+    shipmentInfo: ShipmentInfoDTO;
 }

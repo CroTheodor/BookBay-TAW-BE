@@ -12,7 +12,8 @@ export const handleLogin = (req, res) => {
         lastname: req.user.lastname,
         email: req.user.email,
         _id: req.user._id,
-        roles: req.user.roles
+        roles: req.user.roles,
+        shipmentInfo: req.user.shipmentInfo
     }
 
     let tokenSigned = jsonwebtoken.sign(tokenData, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "1h" });

@@ -3,6 +3,7 @@ import * as user from '../models/user.model';
 import * as listing from '../models/listing.model';
 import { HttpResponse, PaginatedList } from "../models/http-response.model";
 import moment from "moment";
+import { SUPPORTED_COUNTIES } from "../models/utility.models";
 
 const UserModel = user.getModel();
 const ListingModel = listing.getModel();
@@ -90,6 +91,7 @@ export const updateUser = (req: Request, res: Response) => {
                 if (shipmentInfo) {
                     foundUser.shipmentInfo = shipmentInfo;
                 }
+                console.log(shipmentInfo);
 
                 foundUser.save().then(
                     () => {
@@ -142,4 +144,7 @@ export const listingUserListings = async (req, res) => {
         )
 }
 
+export const supportedCounties = (req: Request, res: Response) => {
+    return res.status(200).json(new HttpResponse(true, "Retrieved available couties", SUPPORTED_COUNTIES));
+}
 
