@@ -3,6 +3,7 @@ import { Logger } from "./utility/logger";
 import mongoose from "mongoose";
 import cors from "cors";
 import http from "http";
+import { initIOS } from "./socket/socket-events";
 const io = require('socket.io');
 
 require("dotenv").config();
@@ -32,9 +33,7 @@ mongoose.connect(process.env.db_url as string).then(
                 methods:["GET", "POST"]
             }
         });
-        ios.on("connection", (socket) => {
-            socket.emit("message", "HELLO WORLD");
-        })
+        initIOS();
         // io.engine.on("connection_error", (err) => {
         //     console.log(err.req);      // the request object
         //     console.log(err.code);     // the error code, for example 1

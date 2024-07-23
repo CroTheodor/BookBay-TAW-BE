@@ -1,4 +1,4 @@
-import { model, Model, Schema, SchemaTypes } from "mongoose";
+import { Document, model, Model, Schema, SchemaTypes } from "mongoose";
 
 export interface PublicMessageDTO{
     _id: Schema.Types.ObjectId;
@@ -13,15 +13,16 @@ export interface PrivateMessageDTO{
     _id: Schema.Types.ObjectId;
     date: string;
     content: string;
+    posterId: Schema.Types.ObjectId;
 }
 
-export interface PublicChatroomDTO{
+export interface PublicChatroomDTO extends Document{
     _id: Schema.Types.ObjectId;
     chatroomId: string;
     messages: PublicMessageDTO[];
 }
 
-export interface PrivateChatroomDTO{
+export interface PrivateChatroomDTO extends Document{
     _id: Schema.Types.ObjectId;
     chatroomId: string;
     user1:Schema.Types.ObjectId;
@@ -38,6 +39,10 @@ const privateMessage = new Schema<PrivateMessageDTO>({
         type: SchemaTypes.String,
         required: true
     },
+    posterId: {
+        type: SchemaTypes.ObjectId,
+        required: true,
+    }
 })
 
 const publicMessage = new Schema<PublicMessageDTO>({
