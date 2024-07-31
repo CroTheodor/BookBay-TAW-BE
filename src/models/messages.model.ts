@@ -13,7 +13,7 @@ export interface PrivateMessageDTO{
     _id: Schema.Types.ObjectId;
     date: string;
     content: string;
-    posterId: Schema.Types.ObjectId;
+    userId: Schema.Types.ObjectId;
 }
 
 export interface PublicChatroomDTO extends Document{
@@ -39,7 +39,7 @@ const privateMessage = new Schema<PrivateMessageDTO>({
         type: SchemaTypes.String,
         required: true
     },
-    posterId: {
+    userId: {
         type: SchemaTypes.ObjectId,
         required: true,
     }
