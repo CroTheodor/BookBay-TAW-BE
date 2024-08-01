@@ -42,7 +42,6 @@ export const initIOS = () => {
       "send public message",
       async (roomId: string, message: PublicMessageDTO) => {
         const finalMessage = { ...message, date: moment().toString() };
-                console.log(message);
         const isSent = await sendPublicMessage(roomId, finalMessage);
         if (isSent) {
           ios.to(roomId).emit("public message", message, roomId);

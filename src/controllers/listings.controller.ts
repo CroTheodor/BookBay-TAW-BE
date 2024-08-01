@@ -72,20 +72,22 @@ export const listingGetActive = async (req, res) => {
   let filter: any = { endDate: { $gte: moment().toDate() } };
 
   if (titleFilter) {
-    filter = { ...filter, title: req.query.title };
+    filter = { ...filter, "book.title": new RegExp(titleFilter, "i")};
   }
 
   if (authorFilter) {
-    filter = { ...filter, author: req.query.author };
+    filter = { ...filter, "book.author": new RegExp(authorFilter, "i")};
   }
 
   if (publisherFilter) {
-    filter = { ...filter, publisher: req.query.publisher };
+    filter = { ...filter, "book.publisher": new RegExp(publisherFilter, "i")};
   }
 
   if (courseFilter) {
-    filter = { ...filter, course: req.query.course };
+    filter = { ...filter, "book.course": new RegExp(publisherFilter, "i") };
   }
+
+    console.log(filter);
 
   const page = req.query.page;
   const pageNumber = page ? Number.parseInt(page) : 0;
