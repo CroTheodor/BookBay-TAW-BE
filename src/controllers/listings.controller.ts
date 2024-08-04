@@ -300,3 +300,123 @@ export const listingStatisticExpiredNoBids = async (req, res) => {
       res.status(404).json(new HttpResponse(false, "Not found", null)),
     );
 };
+
+export const userActiveListings = async (req,res) => {
+
+  const userId = req.auth._id;
+
+  const activeFilter = {
+    endDate: { $gt: moment().toDate()},
+    postingUser: userId,
+  }
+
+  const expiredFilter = {
+    endDate: {$lt: moment().toDate()},
+    postingUser: userId,
+  }
+
+  const page = req.query.page ? parseInt(req.query.page) : 0;
+  const limit = req.query.page
+    ? req.query.limit
+      ? req.query.limit
+      : process.env.DEFAULT_LIMIT
+    : 5000;
+  const docCount = await ListingModel.countDocuments(activeFilter).exec();
+  
+  ListingModel.find(activeFilter)
+    .skip(page * limit)
+    .limit(limit)
+    .populate({ path: "bidingUser", select: "-salt -digets" })
+    .populate({ path: "postingUser", select: "-salt -digest" })
+    .then((listingList: listing.ListingDTO[]) => {
+      res
+        .status(200)
+        .json(
+          new HttpResponse(
+            true,
+            "Retrieved user's listings",
+            new PaginatedList(page, limit, docCount, listingList),
+          ),
+        );
+    })
+    .catch(() =>
+      res.status(404).json(new HttpResponse(false, "Not found", null)),
+    );
+
+}
+
+export const userExpiredListings = async (req,res) => {
+
+  const userId = req.auth._id;
+
+  const expiredFilter = {
+    endDate: {$lt: moment().toDate()},
+    postingUser: userId,
+  }
+
+  const page = req.query.page ? parseInt(req.query.page) : 0;
+  const limit = req.query.page
+    ? req.query.limit
+      ? req.query.limit
+      : process.env.DEFAULT_LIMIT
+    : 5000;
+  const docCount = await ListingModel.countDocuments(expiredFilter).exec();
+  
+  ListingModel.find(expiredFilter)
+    .skip(page * limit)
+    .limit(limit)
+    .populate({ path: "bidingUser", select: "-salt -digets" })
+    .populate({ path: "postingUser", select: "-salt -digest" })
+    .then((listingList: listing.ListingDTO[]) => {
+      res
+        .status(200)
+        .json(
+          new HttpResponse(
+            true,
+            "Retrieved user's listings",
+            new PaginatedList(page, limit, docCount, listingList),
+          ),
+        );
+    })
+    .catch(() =>
+      res.status(404).json(new HttpResponse(false, "Not found", null)),
+    );
+}
+
+export const userWonListings = async (req,res) => {
+
+  const userId = req.auth._id;
+
+  const expiredFilter = {
+    endDate: {$lt: moment().toDate()},
+    bidingUser: userId,
+  }
+
+  const page = req.query.page ? parseInt(req.query.page) : 0;
+  const limit = req.query.page
+    ? req.query.limit
+      ? req.query.limit
+      : process.env.DEFAULT_LIMIT
+    : 5000;
+  const docCount = await ListingModel.countDocuments(expiredFilter).exec();
+  
+  ListingModel.find(expiredFilter)
+    .skip(page * limit)
+    .limit(limit)
+    .populate({ path: "bidingUser", select: "-salt -digets" })
+    .populate({ path: "postingUser", select: "-salt -digest" })
+    .then((listingList: listing.ListingDTO[]) => {
+      res
+        .status(200)
+        .json(
+          new HttpResponse(
+            true,
+            "Retrieved user's listings",
+            new PaginatedList(page, limit, docCount, listingList),
+          ),
+        );
+    })
+    .catch(() =>
+      res.status(404).json(new HttpResponse(false, "Not found", null)),
+    );
+}
