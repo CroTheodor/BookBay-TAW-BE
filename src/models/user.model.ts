@@ -2,7 +2,7 @@ import { Model, Schema, SchemaTypes, model, Document } from "mongoose";
 import crypto from "crypto";
 
 export interface UserDTO extends Document {
-    readonly id: Schema.Types.ObjectId;
+    readonly id?: Schema.Types.ObjectId;
     name: string;
     lastname: string;
     email: string;
@@ -13,13 +13,14 @@ export interface UserDTO extends Document {
     setPassword: (pwd: string) => void,
     validatePassword: (pwd: string) => boolean;
     hasRole: (role: E_ROLE) => boolean;
-    passwordChanged: boolean;
+    passwordReset: boolean;
 }
 
+// added administrator role that is able to delete moderators
 export enum E_ROLE {
     STUDENT = "r_student",
-    USER = "r_user",
-    MODERATOR = "r_moderator"
+    MODERATOR = "r_moderator",
+    ADMINISTRATOR = "r_administrator"
 }
 
 export interface ShipmentInfoDTO {
@@ -78,7 +79,7 @@ const userSchema = new Schema<UserDTO>({
         type: SchemaTypes.String,
         required: true
     },
-    passwordChanged: {
+    passwordReset: {
         type: SchemaTypes.Boolean,
         required: false
     }

@@ -8,4 +8,5 @@ export interface TokenDataDTO{
     roles: E_ROLE;
     _id: Schema.Types.ObjectId;
     shipmentInfo: ShipmentInfoDTO;
+    passwordReset: boolean;
 }

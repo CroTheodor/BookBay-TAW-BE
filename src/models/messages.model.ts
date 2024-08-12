@@ -1,4 +1,4 @@
-import { Document, model, Model, Schema, SchemaTypes } from "mongoose";
+import mongoose, { Document, model, Model, Schema, SchemaTypes } from "mongoose";
 
 export interface PublicMessageDTO {
   _id: Schema.Types.ObjectId;
@@ -10,10 +10,10 @@ export interface PublicMessageDTO {
 }
 
 export interface PrivateMessageDTO {
-  _id: Schema.Types.ObjectId;
+  _id?: Schema.Types.ObjectId;
   date: string;
   content: string;
-  userId: Schema.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
 }
 
 export interface PublicChatroomDTO extends Document {

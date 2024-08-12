@@ -4,8 +4,12 @@ import { HttpResponse, PaginatedList } from "../models/http-response.model";
 import { Logger } from "../utility/logger";
 import moment from "moment";
 import { ios } from "../server";
+import { E_ROLE, getModel } from "../models/user.model";
+import { NotificationServiceFactory } from "../utility/notification.service";
 
 const ListingModel = listing.getModel();
+const UserModel = getModel();
+const notificationService = NotificationServiceFactory.getInstance();
 
 export const listingCreate = (req, res) => {
   const missingField = checkBodyRequest(req.body, [
@@ -30,7 +34,7 @@ export const listingCreate = (req, res) => {
         .json(new HttpResponse(true, "Listing created: " + l.id, l)),
     )
     .catch((error) => {
-      console.log(error);
+      Logger.log(error);
       return res.status(500).json(new HttpResponse(false, "DB error", null));
     });
 };
@@ -72,22 +76,20 @@ export const listingGetActive = async (req, res) => {
   let filter: any = { endDate: { $gte: moment().toDate() } };
 
   if (titleFilter) {
-    filter = { ...filter, "book.title": new RegExp(titleFilter, "i")};
+    filter = { ...filter, "book.title": new RegExp(titleFilter, "i") };
   }
 
   if (authorFilter) {
-    filter = { ...filter, "book.author": new RegExp(authorFilter, "i")};
+    filter = { ...filter, "book.author": new RegExp(authorFilter, "i") };
   }
 
   if (publisherFilter) {
-    filter = { ...filter, "book.publisher": new RegExp(publisherFilter, "i")};
+    filter = { ...filter, "book.publisher": new RegExp(publisherFilter, "i") };
   }
 
   if (courseFilter) {
     filter = { ...filter, "book.course": new RegExp(publisherFilter, "i") };
   }
-
-    console.log(filter);
 
   const page = req.query.page;
   const pageNumber = page ? Number.parseInt(page) : 0;
@@ -147,14 +149,26 @@ export const listingsDeleteById = (req, res) => {
 };
 
 export const listingUpdateById = (req, res) => {
+  const userId = req.auth._id;
+  const isUserModerator = req.auth.roles.includes(E_ROLE.MODERATOR);
+
   const bookUpdatableFiels = ["author", "title", "publisher", "course"];
   ListingModel.findById(req.params.id).then((listing: listing.ListingDTO) => {
+    const canEdit =
+      listing.postingUser.toString() === userId || isUserModerator;
+    if (!canEdit) {
+      return res.status(401);
+    }
     const minBid = req.body.minBid;
     if (minBid > listing.currentBid) {
       listing.currentBid = null;
       listing.bidingUser = null;
       listing.bids = null;
     }
+
+    const canUserEditBidAndDuration = listing.bids
+      ? listing.bids.length === 0
+      : true;
 
     const auctionDuration = req.body.auctionDuration;
     if (
@@ -173,10 +187,16 @@ export const listingUpdateById = (req, res) => {
           ),
         );
     }
-    listing.auctionDuration = auctionDuration;
-    listing.endDate = moment(listing.listingDate)
-      .add(auctionDuration, "hours")
-      .toDate();
+    if (auctionDuration && canUserEditBidAndDuration) {
+      listing.auctionDuration = auctionDuration;
+      listing.endDate = moment(listing.listingDate)
+        .add(auctionDuration, "hours")
+        .toDate();
+    }
+
+    if (minBid && canUserEditBidAndDuration) {
+      listing.minBid = minBid;
+    }
 
     if (req.body.book) {
       Object.keys(req.body.book).forEach((key) => {
@@ -198,11 +218,12 @@ export const listingUpdateById = (req, res) => {
             ),
           ),
       )
-      .catch(() =>
-        res
+      .catch((err) => {
+        Logger.error(err);
+        return res
           .status(500)
-          .json(new HttpResponse(false, "Failed to update the listing", null)),
-      );
+          .json(new HttpResponse(false, "Failed to update the listing", null));
+      });
   });
 };
 
@@ -266,10 +287,53 @@ export const listingsBid = (req, res) => {
     });
 };
 
-export const listingStatisticExpiredNoBids = async (req, res) => {
-  const filter = {
+export const statistics = async (req, res) => {
+  const totalUsers = await UserModel.countDocuments();
+  const activeListings = await ListingModel.countDocuments({
+    endDate: { $gt: moment().toDate() },
+  });
+  const noBidsListings = await ListingModel.countDocuments({
+    $and: [{ listingCompleted: true }, { bids: null }],
+  });
+  const bidsNoPaymentListings = await ListingModel.countDocuments({
+    $and: [{ listingCompleted: true }, { paymentCompleted: false }],
+  });
+  const successufListings = await ListingModel.countDocuments({
+    paymentCompleted: true,
+  });
+  const awaitingPayment = await ListingModel.countDocuments({
+    $and: [{ listingCompleted: true }, { paymentCompleted: null }],
+  });
+  const totalListings =
+    awaitingPayment +
+    activeListings +
+    noBidsListings +
+    bidsNoPaymentListings +
+    successufListings;
+  res.status(200).json(
+    new HttpResponse(true, "Retrieved statistics", {
+      totalUsers: totalUsers,
+      totalListings: totalListings,
+      activeListings: activeListings,
+      noBidsListings: noBidsListings,
+      bidsNoPaymentListings: bidsNoPaymentListings,
+      awaitingPayment: awaitingPayment,
+      successufListings: successufListings,
+    }),
+  );
+};
+
+export const userActiveListings = async (req, res) => {
+  const userId = req.auth._id;
+
+  const activeFilter = {
+    endDate: { $gt: moment().toDate() },
+    postingUser: userId,
+  };
+
+  const expiredFilter = {
     endDate: { $lt: moment().toDate() },
-    bidingUser: null,
+    postingUser: userId,
   };
 
   const page = req.query.page ? parseInt(req.query.page) : 0;
@@ -278,9 +342,9 @@ export const listingStatisticExpiredNoBids = async (req, res) => {
       ? req.query.limit
       : process.env.DEFAULT_LIMIT
     : 5000;
-  const docCount = await ListingModel.countDocuments(filter).exec();
+  const docCount = await ListingModel.countDocuments(activeFilter).exec();
 
-  ListingModel.find(filter)
+  ListingModel.find(activeFilter)
     .skip(page * limit)
     .limit(limit)
     .populate({ path: "bidingUser", select: "-salt -digets" })
@@ -301,58 +365,13 @@ export const listingStatisticExpiredNoBids = async (req, res) => {
     );
 };
 
-export const userActiveListings = async (req,res) => {
-
-  const userId = req.auth._id;
-
-  const activeFilter = {
-    endDate: { $gt: moment().toDate()},
-    postingUser: userId,
-  }
-
-  const expiredFilter = {
-    endDate: {$lt: moment().toDate()},
-    postingUser: userId,
-  }
-
-  const page = req.query.page ? parseInt(req.query.page) : 0;
-  const limit = req.query.page
-    ? req.query.limit
-      ? req.query.limit
-      : process.env.DEFAULT_LIMIT
-    : 5000;
-  const docCount = await ListingModel.countDocuments(activeFilter).exec();
-  
-  ListingModel.find(activeFilter)
-    .skip(page * limit)
-    .limit(limit)
-    .populate({ path: "bidingUser", select: "-salt -digets" })
-    .populate({ path: "postingUser", select: "-salt -digest" })
-    .then((listingList: listing.ListingDTO[]) => {
-      res
-        .status(200)
-        .json(
-          new HttpResponse(
-            true,
-            "Retrieved user's listings",
-            new PaginatedList(page, limit, docCount, listingList),
-          ),
-        );
-    })
-    .catch(() =>
-      res.status(404).json(new HttpResponse(false, "Not found", null)),
-    );
-
-}
-
-export const userExpiredListings = async (req,res) => {
-
+export const userExpiredListings = async (req, res) => {
   const userId = req.auth._id;
 
   const expiredFilter = {
-    endDate: {$lt: moment().toDate()},
+    endDate: { $lt: moment().toDate() },
     postingUser: userId,
-  }
+  };
 
   const page = req.query.page ? parseInt(req.query.page) : 0;
   const limit = req.query.page
@@ -361,7 +380,7 @@ export const userExpiredListings = async (req,res) => {
       : process.env.DEFAULT_LIMIT
     : 5000;
   const docCount = await ListingModel.countDocuments(expiredFilter).exec();
-  
+
   ListingModel.find(expiredFilter)
     .skip(page * limit)
     .limit(limit)
@@ -381,16 +400,15 @@ export const userExpiredListings = async (req,res) => {
     .catch(() =>
       res.status(404).json(new HttpResponse(false, "Not found", null)),
     );
-}
+};
 
-export const userWonListings = async (req,res) => {
-
+export const userWonListings = async (req, res) => {
   const userId = req.auth._id;
 
   const expiredFilter = {
-    endDate: {$lt: moment().toDate()},
+    endDate: { $lt: moment().toDate() },
     bidingUser: userId,
-  }
+  };
 
   const page = req.query.page ? parseInt(req.query.page) : 0;
   const limit = req.query.page
@@ -399,7 +417,7 @@ export const userWonListings = async (req,res) => {
       : process.env.DEFAULT_LIMIT
     : 5000;
   const docCount = await ListingModel.countDocuments(expiredFilter).exec();
-  
+
   ListingModel.find(expiredFilter)
     .skip(page * limit)
     .limit(limit)
@@ -419,4 +437,48 @@ export const userWonListings = async (req,res) => {
     .catch(() =>
       res.status(404).json(new HttpResponse(false, "Not found", null)),
     );
-}
+};
+
+export const completePayment = async (req, res) => {
+  const userId = req.auth._id;
+  const isModerator = req.auth.roles.includes(E_ROLE.MODERATOR);
+  try {
+    let listing = await ListingModel.findById(req.params.id);
+    if (listing.bidingUser.toString() !== userId && !isModerator) {
+      return res.sendStatus(401);
+    }
+    if (listing.paymentCompleted) {
+      return res
+        .status(500)
+        .json(
+          new HttpResponse(
+            false,
+            "Cannot complete a payment that's already completed",
+            null,
+          ),
+        );
+    }
+    listing.paymentCompleted = true;
+    try {
+      await listing.save();
+      notificationService.sendNotification(
+        listing.postingUser.toString(),
+        listing._id.toString(),
+        "The buyer has successufListings completed the payment for the book.",
+      );
+      res
+        .status(201)
+        .json(new HttpResponse(true, "Successfully completed payment", null));
+    } catch (err) {
+      Logger.error(err);
+      res
+        .status(501)
+        .json(
+          new HttpResponse(false, "Error while updating the listing", null),
+        );
+    }
+  } catch (err) {
+    Logger.error(err);
+    res.status(404);
+  }
+};

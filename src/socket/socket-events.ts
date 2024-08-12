@@ -13,13 +13,12 @@ import { verify } from "jsonwebtoken";
 import { Logger } from "../utility/logger";
 import { UserDTO } from "../models/user.model";
 
-const connectedSockets: Map<string, string> = new Map<string, string>();
+export const connectedSockets: Map<string, string> = new Map<string, string>();
 
 const socketAuth = (socket, next) => {
   const token = socket.handshake.auth.token;
   verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (decoded) {
-      console.log(decoded);
       socket.userId = decoded._id;
     }
     next();
@@ -33,10 +32,6 @@ export const initIOS = () => {
     if (id) {
       connectedSockets.set(id, socket.id);
     }
-
-    socket.on("reconnect", () => {
-      console.log(socket.id);
-    });
 
     socket.on("retrieve private messages", async (roomId: string) => {
       const messages = await retrieveMessagesForPrivateChatroom(roomId);
@@ -53,7 +48,7 @@ export const initIOS = () => {
     });
 
     socket.on("retrieve chatrooms", async () => {
-      console.log("Retrieving chatrooms");
+      Logger.log("Retrieving chatrooms");
       if (!id) {
         socket.emit("user chatrooms", null);
       } else {
@@ -118,16 +113,16 @@ export const initIOS = () => {
     });
 
     socket.on("disconnect", () => {
-      console.log("disconnect");
+      Logger.log("disconnect");
       if (id) {
         connectedSockets.delete(id);
       }
     });
     ios.engine.on("connection_error", (err) => {
-      console.log(err.req); // the request object
-      console.log(err.code); // the error code, for example 1
-      console.log(err.message); // the error message, for example "Session ID unknown"
-      console.log(err.context); // some additional error context
+      Logger.log(err.req); // the request object
+      Logger.log(err.code); // the error code, for example 1
+      Logger.log(err.message); // the error message, for example "Session ID unknown"
+      Logger.log(err.context); // some additional error context
     });
   });
 };
