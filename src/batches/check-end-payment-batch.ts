@@ -26,7 +26,8 @@ export const launchListingPaymentChecker = async () => {
         listing._id.toString(),
         "The buyer has failed to provide a payment in time. Please relist your book.",
       );
-      // listing.save();
+      listing.paymentCompleted = false;
+      listing.save();
     } else {
       soonestToExpire =
         listing.endDate < soonestToExpire! ? listing.endDate : soonestToExpire;
