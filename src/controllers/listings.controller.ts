@@ -482,3 +482,32 @@ export const completePayment = async (req, res) => {
     res.status(404);
   }
 };
+
+export const soonToExpire = async (req, res)=>{
+  try{
+    const now = moment().toDate();
+    const listings = await ListingModel.aggregate([
+      {
+        $match: {
+          endDate: {$gt: now}
+        }
+      },
+      {
+        $addFields:{
+          timeDiff: {
+            $subtract: ["$endDate", now]
+          }
+        }
+      },{
+        $sort: { timeDiff: 1 }
+      },
+      {
+        $limit: 3
+      }
+    ])
+    return res.status(200).json(new HttpResponse(true, "Soon to expire listings", listings));
+  } catch(err){
+    Logger.log(err);
+    return res.status(500).json(new HttpResponse(false, "Internal error while retrieving listings", null));
+  }
+}

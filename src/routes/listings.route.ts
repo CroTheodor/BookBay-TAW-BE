@@ -10,6 +10,7 @@ import {
   listingsBid,
   listingsDeleteById,
   listingUpdateById,
+  soonToExpire,
   statistics,
   userActiveListings,
   userExpiredListings,
@@ -27,6 +28,8 @@ router.get("/user/expired", auth, userExpiredListings);
 
 router.get("/user/won", auth, userWonListings);
 
+router.get("/soon-to-expire", soonToExpire);
+
 router
   .route("/:id")
   .put(auth, listingUpdateById)
@@ -40,5 +43,6 @@ router.route("/:id/payment-complete").post(auth, completePayment);
 router
   .route("/statistics/all")
   .get(auth, isModerator, statistics);
+
 
 module.exports = router;
